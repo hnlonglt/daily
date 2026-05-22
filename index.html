@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Daily"/>
+<meta name="theme-color" content="#0D0F14"/>
+<title>Daily Management</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
+body{background:#0D0F14;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',sans-serif;color:#EEF0F6;overscroll-behavior:none;-webkit-user-select:none;}
+input,textarea,select{-webkit-appearance:none;font-family:inherit;font-size:15px;}
+::-webkit-scrollbar{display:none;}
+textarea{resize:none;}
+button{cursor:pointer;font-family:inherit;}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideDown{from{transform:translateY(-110%)}to{transform:translateY(0)}}
+@keyframes toastPop{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.screen{min-height:100vh;padding-bottom:90px;}
+.header{padding:52px 20px 24px;position:relative;overflow:hidden;background:linear-gradient(160deg,#0D1520,#111827);border-bottom:1px solid #252D3F;}
+.header.light{background:linear-gradient(160deg,#3A7BD5,#5E5CE6);}
+.blob{position:absolute;border-radius:50%;filter:blur(60px);pointer-events:none;}
+.card{background:#161B25;border-radius:18px;padding:14px 16px;margin-bottom:10px;border:1px solid #252D3F;}
+.card.light{background:#fff;border-color:#DDE3F0;}
+.nav{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;padding:10px 0;padding-bottom:calc(10px + env(safe-area-inset-bottom));background:rgba(13,15,20,.96);border-top:1px solid #252D3F;z-index:100;backdrop-filter:blur(20px);}
+.nav.light{background:rgba(248,250,255,.96);border-top-color:#DDE3F0;}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:2px 14px;cursor:pointer;position:relative;}
+.nav-icon{width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.nav-label{font-size:10px;font-weight:700;}
+.fab{position:fixed;bottom:90px;right:18px;width:54px;height:54px;border-radius:20px;border:none;display:flex;align-items:center;justify-content:center;z-index:200;box-shadow:0 6px 24px rgba(244,197,66,.4);}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:300;display:flex;align-items:flex-end;animation:fadeIn .2s ease;}
+.sheet{background:#161B25;border-radius:24px 24px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding:0 0 44px;border:1px solid #252D3F;border-bottom:none;animation:slideUp .3s ease;}
+.sheet.light{background:#fff;border-color:#DDE3F0;}
+.handle{width:40px;height:4px;background:#252D3F;border-radius:99px;margin:14px auto 20px;}
+.sheet-body{padding:0 20px;}
+.input{width:100%;background:#1C2333;border:1.5px solid #252D3F;border-radius:12px;padding:12px 14px;color:#EEF0F6;outline:none;display:block;}
+.input.light{background:#F0F4FF;border-color:#DDE3F0;color:#1A1D2E;}
+.label{font-size:11px;font-weight:700;color:#7A849A;margin-bottom:6px;display:block;text-transform:uppercase;letter-spacing:.8px;}
+.btn{width:100%;border-radius:14px;padding:13px 20px;font-size:15px;font-weight:800;border:none;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-primary{background:linear-gradient(135deg,#F4C542,#E8943A);color:#000;}
+.btn-ghost{background:transparent;color:#F4C542;border:1.5px solid rgba(244,197,66,.4);}
+.btn-danger{background:rgba(224,92,92,.15);color:#E05C5C;border:1.5px solid rgba(224,92,92,.3);}
+.toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);padding:10px 22px;border-radius:99px;font-size:13px;font-weight:700;white-space:nowrap;z-index:999;animation:toastPop .25s ease;pointer-events:none;}
+.pill{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;}
+.task-row{border-radius:16px;padding:13px 15px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;position:relative;overflow:hidden;}
+.checkbox{width:24px;height:24px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.note-card{border-radius:18px;padding:14px 16px;margin-bottom:10px;cursor:pointer;border:1px solid rgba(255,255,255,.08);}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.sec-title{font-size:11px;font-weight:800;color:#7A849A;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px;}
+.welcome{position:fixed;top:0;left:0;right:0;z-index:500;padding:54px 24px 24px;animation:slideDown .5s ease;box-shadow:0 8px 32px rgba(0,0,0,.4);background:linear-gradient(135deg,#3A7BD5,#5E5CE6);}
+select option{background:#161B25;color:#EEF0F6;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ═══════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════
+const $ = id => document.getElementById(id);
+const uid = () => Math.random().toString(36).slice(2,10);
+const pad = n => String(n).padStart(2,'0');
+const fmtTime = iso => { if(!iso)return''; const d=new Date(iso); return pad(d.getHours())+':'+pad(d.getMinutes()); };
+const fmtDate = iso => { if(!iso)return''; const d=new Date(iso); return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear(); };
+const fmtFull = iso => iso ? fmtDate(iso)+' '+fmtTime(iso) : '';
+const isToday = iso => iso && new Date(iso).toDateString()===new Date().toDateString();
+const isPast  = iso => !!(iso && new Date(iso)<new Date());
+const isSoon  = iso => { if(!iso)return false; const d=new Date(iso)-new Date(); return d>0&&d<7200000; };
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const LS = {
+  get:(k,d)=>{ try{ const v=localStorage.getItem(k); return v!=null?JSON.parse(v):d; }catch(e){return d;} },
+  set:(k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+};
+
+// ═══════════════════════════════════════
+//  I18N
+// ═══════════════════════════════════════
+const LANG = {
+  vi:{nav:['Tổng quan','Công việc','Lịch','Ghi chú'],hello:n=>'Xin chào, '+n+' 👋',greet:h=>h<12?'Chào buổi sáng ☀️':h<18?'Chào buổi chiều 🌤':'Chào buổi tối 🌙',progressLabel:'Tiến độ hôm nay',doneLabel:'hoàn thành',leftLabel:'còn lại',todayLabel:'Hôm nay',overdueLabel:'Quá hạn',notesLabel:'Ghi chú',recentNotes:'Ghi chú gần đây',viewAll:'Xem tất cả →',allTasks:'Tất cả',showDone:'Hiện đã xong',hideDone:'Ẩn đã xong',noTasks:'Không có việc nào!',notToday:'Không có việc nào ngày này',addTask:'Thêm việc mới',editTask:'Sửa việc',taskNameLbl:'Tên việc *',taskNamePh:'Nhập tên việc...',descLbl:'Ghi chú thêm',descPh:'Mô tả thêm...',priorityLbl:'Ưu tiên',tagLbl:'Thẻ',deadlineLbl:'Hạn chót (báo nhắc)',saveBtn:'💾 Lưu',createBtn:'✅ Tạo việc',cancelBtn:'Huỷ',deleteTask:'🗑 Xoá việc này',markDone:'✅ Hoàn thành',unmarkDone:'↩️ Bỏ hoàn thành',editBtn:'✏️ Sửa',pinBtn:'📌 Ghim',pinnedBtn:'📌 Đã ghim',deadlineInfo:'📅 Hạn chót',createdInfo:'📆 Tạo lúc',overdueTxt:'⚠️ Quá hạn',soonTxt:'⏰ Sắp hết hạn',newNote:'Ghi chú mới',editNote:'Chỉnh sửa ghi chú',noteTitleLbl:'Tiêu đề',noteTitlePh:'Tiêu đề...',noteBodyLbl:'Nội dung',noteBodyPh:'Viết ghi chú...',noteColorLbl:'Màu nền',createNote:'📝 Tạo ghi chú',saveNote:'💾 Lưu',deleteNote:'🗑 Xoá ghi chú',updatedAt:'Cập nhật',noNotes:'Chưa có ghi chú nào',settings:'Cài đặt',themeLabel:'Giao diện',langLabel:'Ngôn ngữ',darkLabel:'Tối',lightLabel:'Sáng',backupTitle:'Backup & Khôi phục',storageInfo:'Dữ liệu lưu trên thiết bị này',exportBtn:'📤 Xuất backup (JSON)',importBtn:'📥 Nhập backup',exportOk:'Đã xuất backup!',importOk:'Đã nhập dữ liệu!',importErr:'File không hợp lệ!',addToHome:'💡 Safari → Chia sẻ → "Add to Home Screen" để cài app!',prios:['Quan trọng','Bình thường','Thấp'],prioIcons:['⭐','📌','📎'],tags:['Cá nhân','Sức khoẻ','Tài chính','Gia đình','Học tập','Giải trí','Mua sắm','Du lịch'],months:['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'],weekdays:['CN','T2','T3','T4','T5','T6','T7'],dayTasks:(d,m,n)=>'Ngày '+d+'/'+m+' — '+n+' việc'},
+  en:{nav:['Overview','Tasks','Calendar','Notes'],hello:n=>'Hello, '+n+' 👋',greet:h=>h<12?'Good morning ☀️':h<18?'Good afternoon 🌤':'Good evening 🌙',progressLabel:"Today's progress",doneLabel:'done',leftLabel:'left',todayLabel:'Today',overdueLabel:'Overdue',notesLabel:'Notes',recentNotes:'Recent notes',viewAll:'View all →',allTasks:'All',showDone:'Show done',hideDone:'Hide done',noTasks:'No tasks!',notToday:'No tasks on this day',addTask:'Add task',editTask:'Edit task',taskNameLbl:'Task name *',taskNamePh:'Enter task name...',descLbl:'Note',descPh:'More details...',priorityLbl:'Priority',tagLbl:'Tag',deadlineLbl:'Deadline (reminder)',saveBtn:'💾 Save',createBtn:'✅ Create',cancelBtn:'Cancel',deleteTask:'🗑 Delete task',markDone:'✅ Mark done',unmarkDone:'↩️ Undo',editBtn:'✏️ Edit',pinBtn:'📌 Pin',pinnedBtn:'📌 Pinned',deadlineInfo:'📅 Deadline',createdInfo:'📆 Created',overdueTxt:'⚠️ Overdue',soonTxt:'⏰ Due soon',newNote:'New note',editNote:'Edit note',noteTitleLbl:'Title',noteTitlePh:'Note title...',noteBodyLbl:'Content',noteBodyPh:'Write here...',noteColorLbl:'Color',createNote:'📝 Create note',saveNote:'💾 Save',deleteNote:'🗑 Delete note',updatedAt:'Updated',noNotes:'No notes yet',settings:'Settings',themeLabel:'Theme',langLabel:'Language',darkLabel:'Dark',lightLabel:'Light',backupTitle:'Backup & Restore',storageInfo:'Data stored on this device',exportBtn:'📤 Export backup (JSON)',importBtn:'📥 Import backup',exportOk:'Backup exported!',importOk:'Data imported!',importErr:'Invalid file!',addToHome:'💡 Safari → Share → "Add to Home Screen" to install!',prios:['Important','Normal','Low'],prioIcons:['⭐','📌','📎'],tags:['Personal','Health','Finance','Family','Study','Fun','Shopping','Travel'],months:['January','February','March','April','May','June','July','August','September','October','November','December'],weekdays:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],dayTasks:(d,m,n)=>n+' tasks on '+d+'/'+m},
+  ko:{nav:['개요','할 일','캘린더','메모'],hello:n=>n+'님, 안녕하세요 👋',greet:h=>h<12?'좋은 아침이에요 ☀️':h<18?'좋은 오후예요 🌤':'좋은 저녁이에요 🌙',progressLabel:'오늘의 진행률',doneLabel:'완료',leftLabel:'남음',todayLabel:'오늘',overdueLabel:'기한 초과',notesLabel:'메모',recentNotes:'최근 메모',viewAll:'전체 보기 →',allTasks:'전체',showDone:'완료 보기',hideDone:'완료 숨기기',noTasks:'할 일이 없습니다!',notToday:'이 날 할 일이 없습니다',addTask:'새 할 일',editTask:'수정',taskNameLbl:'할 일 이름 *',taskNamePh:'할 일을 입력하세요...',descLbl:'메모',descPh:'세부 내용...',priorityLbl:'우선순위',tagLbl:'태그',deadlineLbl:'마감일 (알림)',saveBtn:'💾 저장',createBtn:'✅ 생성',cancelBtn:'취소',deleteTask:'🗑 삭제',markDone:'✅ 완료',unmarkDone:'↩️ 취소',editBtn:'✏️ 수정',pinBtn:'📌 고정',pinnedBtn:'📌 고정됨',deadlineInfo:'📅 마감일',createdInfo:'📆 생성일',overdueTxt:'⚠️ 기한 초과',soonTxt:'⏰ 마감 임박',newNote:'새 메모',editNote:'메모 수정',noteTitleLbl:'제목',noteTitlePh:'메모 제목...',noteBodyLbl:'내용',noteBodyPh:'메모를 작성하세요...',noteColorLbl:'배경 색상',createNote:'📝 생성',saveNote:'💾 저장',deleteNote:'🗑 삭제',updatedAt:'업데이트',noNotes:'메모가 없습니다',settings:'설정',themeLabel:'테마',langLabel:'언어',darkLabel:'어둡게',lightLabel:'밝게',backupTitle:'백업 & 복원',storageInfo:'이 기기에 저장됨',exportBtn:'📤 내보내기 (JSON)',importBtn:'📥 가져오기',exportOk:'백업 완료!',importOk:'가져오기 완료!',importErr:'잘못된 파일!',addToHome:'💡 Safari → 공유 → "홈 화면에 추가"',prios:['중요','보통','낮음'],prioIcons:['⭐','📌','📎'],tags:['개인','건강','재정','가족','학습','여가','쇼핑','여행'],months:['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],weekdays:['일','월','화','수','목','금','토'],dayTasks:(d,m,n)=>m+'/'+d+' — '+n+'개'},
+};
+
+// ═══════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════
+const VI_PRIOS = ['Quan trọng','Bình thường','Thấp'];
+const VI_TAGS  = ['Cá nhân','Sức khoẻ','Tài chính','Gia đình','Học tập','Giải trí','Mua sắm','Du lịch'];
+const PRIO_COLORS = ['#F4C542','#6C9FD4','#7A8B8B'];
+const NOTE_COLORS = ['#1E3A5F','#2A4A3E','#4A2A2A','#3A2A4A','#1C1C2E','#2A3A1E'];
+const USER = 'Lương Tuấn Long';
+
+function mkTask(title,desc,tag,priority,done,h,pin){
+  return {id:uid(),title,desc,tag,priority,done,pinned:!!pin,createdAt:new Date().toISOString(),dueDate:h!=null?new Date(Date.now()+h*3600000).toISOString().slice(0,16):''};
+}
+const DEFAULT_TASKS = [
+  mkTask('Uống đủ 2L nước','Nhắc nhở bản thân uống nước đều trong ngày.','Sức khoẻ','Bình thường',false,0.5,false),
+  mkTask('Thanh toán hoá đơn điện','Hạn cuối tháng này, nhớ chuyển khoản.','Tài chính','Quan trọng',false,48,true),
+  mkTask('Gọi điện cho mẹ','','Gia đình','Quan trọng',false,5,false),
+  mkTask('Đọc sách 30 phút','Đọc cuốn Atomic Habits chương 4.','Học tập','Thấp',true,null,false),
+];
+const DEFAULT_NOTES = [
+  {id:uid(),title:'Ý tưởng cuối tuần',body:'- Đi cà phê với bạn\n- Tập gym buổi sáng\n- Xem phim tối',color:'#1E3A5F',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()},
+  {id:uid(),title:'Danh sách mua sắm',body:'✓ Sữa chua\n✓ Trứng\n✗ Rau xanh\n✗ Trái cây',color:'#2A4A3E',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()},
+];
+
+let S = {
+  tasks:     LS.get('dm_tasks', DEFAULT_TASKS),
+  notes:     LS.get('dm_notes', DEFAULT_NOTES),
+  screen:    'home',
+  modal:     null,
+  selTask:   null,
+  taskForm:  null,
+  noteForm:  null,
+  calDate:   new Date(),
+  filterTag: null,
+  showDone:  false,
+  theme:     LS.get('dm_theme','dark'),
+  lang:      LS.get('dm_lang','vi'),
+  showSett:  false,
+  calSelDay: null,
+  toasts:    [],
+};
+
+function save(){ LS.set('dm_tasks',S.tasks); LS.set('dm_notes',S.notes); }
+
+// ═══════════════════════════════════════
+//  THEME HELPERS
+// ═══════════════════════════════════════
+const TH = {
+  dark:{bg:'#0D0F14',card:'#161B25',card2:'#1C2333',border:'#252D3F',text:'#EEF0F6',sub:'#7A849A',gold:'#F4C542',blue:'#4A90D9',green:'#4CAF7D',red:'#E05C5C',warn:'#E8943A'},
+  light:{bg:'#F0F4FF',card:'#FFFFFF',card2:'#F5F7FF',border:'#DDE3F0',text:'#1A1D2E',sub:'#8892AA',gold:'#C8920A',blue:'#3A7BD5',green:'#2E9E5E',red:'#D94F4F',warn:'#D4742A'},
+};
+const C = () => TH[S.theme];
+const T = () => LANG[S.lang];
+
+// ═══════════════════════════════════════
+//  SVG ICONS (inline strings)
+// ═══════════════════════════════════════
+const ICONS = {
+  home: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+  homeFill: `<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>`,
+  task: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`,
+  taskFill: `<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 12l3 3 5-6" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  cal: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+  calFill: `<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6" stroke="white" stroke-width="2"/><line x1="8" y1="2" x2="8" y2="6" stroke="white" stroke-width="2"/><circle cx="8" cy="15" r="1.5" fill="white"/><circle cx="12" cy="15" r="1.5" fill="white"/><circle cx="16" cy="15" r="1.5" fill="white"/></svg>`,
+  note: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`,
+  noteFill: `<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><line x1="16" y1="13" x2="8" y2="13" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="16" y1="17" x2="8" y2="17" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/></svg>`,
+  plus: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+  gear: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
+  chevL: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>`,
+  chevR: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>`,
+  check: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+  sun: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>`,
+  moon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`,
+  down: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
+  up: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`,
+};
+const ic = n => ICONS[n] || '';
+
+// ═══════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════
+function toast(msg, type='ok'){
+  const c=C(), id='t'+uid();
+  const bg = type==='err'?c.red : type==='warn'?c.warn : c.card;
+  const el = document.createElement('div');
+  el.className='toast';
+  el.id=id;
+  el.style.cssText=`background:${bg};color:#fff;box-shadow:0 4px 20px rgba(0,0,0,.35);`;
+  el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 2600);
+}
+
+// ═══════════════════════════════════════
+//  DEADLINE TIMERS
+// ═══════════════════════════════════════
+const timers = {};
+function scheduleReminders(){
+  S.tasks.forEach(t=>{
+    if(t.done||!t.dueDate||timers[t.id])return;
+    const diff = new Date(t.dueDate)-new Date();
+    if(diff>0&&diff<86400000){
+      timers[t.id]=setTimeout(()=>toast('⏰ '+t.title,'warn'), Math.max(0,diff-600000));
+    }
+  });
+}
+
+// ═══════════════════════════════════════
+//  RENDER ENGINE
+// ═══════════════════════════════════════
+function render(){
+  const c=C(), t=T(), isDark=S.theme==='dark';
+  document.body.style.background=c.bg;
+  document.body.style.color=c.text;
+
+  const NAV_ITEMS=[
+    {key:'home',   ic:'home',   icF:'homeFill'},
+    {key:'tasks',  ic:'task',   icF:'taskFill'},
+    {key:'calendar',ic:'cal',  icF:'calFill'},
+    {key:'notes',  ic:'note',   icF:'noteFill'},
+  ];
+
+  // helper: pill badge
+  const pill=(color,txt)=>`<span class="pill" style="background:${color}22;color:${color};border:1px solid ${color}44">${esc(txt)}</span>`;
+
+  // helper: task row html
+  function taskRowHTML(task){
+    const ov=isPast(task.dueDate)&&!isToday(task.dueDate)&&!task.done;
+    const sn=isSoon(task.dueDate)&&!task.done;
+    const pi=VI_PRIOS.indexOf(task.priority); const ppi=pi>=0?pi:1;
+    const pc=PRIO_COLORS[ppi];
+    const deadlineHTML = task.dueDate ? `<span style="font-size:11px;color:${ov?c.red:sn?c.warn:c.sub};font-weight:600">${ov?t.overdueTxt+' ':sn?t.soonTxt+' ':'📅 '}${esc(fmtFull(task.dueDate))}</span>` : '';
+    return `<div class="task-row" data-id="${task.id}" style="background:${c.card};border:1px solid ${ov?'#E05C5C44':sn?'#E8943A44':c.border};opacity:${task.done?.5:1};box-shadow:${isDark?'none':'0 2px 8px rgba(0,0,0,.05)'}">
+      ${task.pinned?`<div style="position:absolute;top:0;right:0;width:0;height:0;border-style:solid;border-width:0 24px 24px 0;border-color:transparent ${c.gold} transparent transparent"></div>`:''}
+      <div class="checkbox" data-check="${task.id}" style="border:2px solid ${task.done?c.green:c.border};background:${task.done?c.green:'transparent'}">
+        ${task.done?ic('check'):''}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:15px;color:${task.done?c.sub:c.text};text-decoration:${task.done?'line-through':'none'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(task.title)}</div>
+        <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;align-items:center">
+          ${pill(pc, t.prioIcons[ppi]+' '+(t.prios[ppi]||task.priority))}
+          ${deadlineHTML}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── screen content ──
+  let content = '';
+
+  if(S.screen==='home'){
+    const hr=new Date().getHours();
+    const done=S.tasks.filter(x=>x.done).length;
+    const pct=S.tasks.length?Math.round(done/S.tasks.length*100):0;
+    const todayTasks=S.tasks.filter(x=>!x.done&&x.dueDate&&isToday(x.dueDate));
+    const overdTasks=S.tasks.filter(x=>!x.done&&x.dueDate&&isPast(x.dueDate)&&!isToday(x.dueDate));
+    const localeStr = S.lang==='ko'?'ko-KR':S.lang==='en'?'en-US':'vi-VN';
+
+    content=`
+    <div class="header ${isDark?'':'light'}">
+      <div class="blob" style="width:220px;height:220px;background:${c.blue};opacity:.18;top:-70px;right:-50px"></div>
+      <div class="blob" style="width:120px;height:120px;background:${c.gold};opacity:.12;bottom:-30px;left:20px"></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative">
+        <div>
+          <div style="font-size:12px;color:rgba(255,255,255,.65);font-weight:600;margin-bottom:3px">${t.greet(hr)}</div>
+          <div style="font-size:22px;font-weight:800;color:#fff;line-height:1.2">${esc(t.hello(USER))}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">${new Date().toLocaleDateString(localeStr,{weekday:'long',day:'numeric',month:'long'})}</div>
+        </div>
+        <button id="btnSett" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:8px;display:flex">${ic('gear')}</button>
+      </div>
+      <div style="margin-top:18px;background:rgba(255,255,255,.1);border-radius:16px;padding:14px 16px;border:1px solid rgba(255,255,255,.15)">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px">
+          <span style="font-weight:700;color:#fff">${t.progressLabel}</span>
+          <span style="color:${c.gold};font-weight:800">${pct}%</span>
+        </div>
+        <div style="background:rgba(255,255,255,.15);border-radius:99px;height:7px">
+          <div style="background:linear-gradient(90deg,${c.gold},${c.green});height:100%;border-radius:99px;width:${pct}%;transition:width .8s"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:rgba(255,255,255,.55)">
+          <span>${done} ${t.doneLabel}</span><span>${S.tasks.length-done} ${t.leftLabel}</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:18px 18px 0">
+      ${[{icon:'📅',label:t.todayLabel,val:todayTasks.length,color:c.blue},{icon:'⚠️',label:t.overdueLabel,val:overdTasks.length,color:c.red},{icon:'📝',label:t.notesLabel,val:S.notes.length,color:c.gold}].map(x=>`
+        <div style="background:${c.card};border-radius:18px;padding:14px 10px;border:1px solid ${c.border};text-align:center;border-top:3px solid ${x.color}">
+          <div style="font-size:20px">${x.icon}</div>
+          <div style="font-size:22px;font-weight:800;color:${x.color};line-height:1.2">${x.val}</div>
+          <div style="font-size:10px;color:${c.sub};font-weight:700;margin-top:2px">${x.label}</div>
+        </div>`).join('')}
+    </div>
+    ${todayTasks.length?`<div style="padding:0 18px;margin-top:18px"><div class="sec-title" style="color:${c.sub}">${t.todayLabel} (${todayTasks.length})</div>${todayTasks.slice(0,5).map(taskRowHTML).join('')}</div>`:''}
+    ${overdTasks.length?`<div style="padding:0 18px;margin-top:16px"><div class="sec-title" style="color:${c.red}">${t.overdueLabel} (${overdTasks.length})</div>${overdTasks.slice(0,3).map(taskRowHTML).join('')}</div>`:''}
+    ${S.notes.length?`<div style="padding:0 18px;margin-top:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="sec-title" style="color:${c.sub}">${t.recentNotes}</div>
+        <span id="goNotes" style="font-size:12px;color:${c.gold};font-weight:700;cursor:pointer">${t.viewAll}</span>
+      </div>
+      <div class="grid2">${S.notes.slice(0,4).map(n=>`
+        <div class="note-card" data-nid="${n.id}" style="background:${n.color||c.card}">
+          <div style="font-weight:800;font-size:13px;margin-bottom:4px">${esc(n.title)}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;white-space:pre-wrap">${esc(n.body)}</div>
+        </div>`).join('')}
+      </div>
+    </div>`:''}
+    <div style="height:20px"></div>`;
+  }
+
+  else if(S.screen==='tasks'){
+    const vis=S.tasks
+      .filter(x=>S.filterTag===null||x.tag===S.filterTag)
+      .filter(x=>S.showDone||!x.done)
+      .sort((a,b)=>{ if(a.pinned!==b.pinned)return b.pinned?1:-1; if(a.done!==b.done)return a.done?1:-1; return VI_PRIOS.indexOf(a.priority)-VI_PRIOS.indexOf(b.priority); });
+
+    content=`
+    <div class="header ${isDark?'':'light'}">
+      <div class="blob" style="width:160px;height:160px;background:${c.gold};opacity:.15;top:-50px;right:-30px"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;position:relative">
+        <div>
+          <div style="font-size:24px;font-weight:800;color:#fff">${t.nav[1]}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:2px">${vis.length} · ${S.tasks.filter(x=>x.done).length} ${t.doneLabel}</div>
+        </div>
+        <button id="btnSett" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:8px;display:flex">${ic('gear')}</button>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:8px;overflow-x:auto;padding-bottom:2px">
+        <button data-filter="__all__" style="background:${S.filterTag===null?c.gold:'transparent'};color:${S.filterTag===null?'#000':'rgba(255,255,255,.55)'};border:1.5px solid ${S.filterTag===null?c.gold:'rgba(255,255,255,.2)'};border-radius:20px;padding:5px 14px;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0;font-family:inherit">${t.allTasks}</button>
+        ${t.tags.map((tg,i)=>`<button data-filter="${VI_TAGS[i]}" style="background:${S.filterTag===VI_TAGS[i]?c.gold:'transparent'};color:${S.filterTag===VI_TAGS[i]?'#000':'rgba(255,255,255,.55)'};border:1.5px solid ${S.filterTag===VI_TAGS[i]?c.gold:'rgba(255,255,255,.2)'};border-radius:20px;padding:5px 14px;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0;font-family:inherit">${esc(tg)}</button>`).join('')}
+      </div>
+    </div>
+    <div style="padding:0 18px;margin-top:18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="sec-title" style="color:${c.sub}">${t.nav[1]}</div>
+        <button id="btnToggleDone" style="background:transparent;border:1.5px solid ${c.border};border-radius:20px;padding:4px 12px;font-size:11px;color:${c.sub};font-weight:700;font-family:inherit">${S.showDone?t.hideDone:t.showDone}</button>
+      </div>
+      ${vis.length===0?`<div style="text-align:center;padding:60px 0;color:${c.sub}"><div style="font-size:48px;margin-bottom:12px">✅</div><div style="font-weight:700">${t.noTasks}</div></div>`:vis.map(taskRowHTML).join('')}
+    </div>`;
+  }
+
+  else if(S.screen==='calendar'){
+    const cy=S.calDate.getFullYear(), cm=S.calDate.getMonth();
+    const fd=new Date(cy,cm,1).getDay();
+    const dim=new Date(cy,cm+1,0).getDate();
+    const cells=Array(fd).fill(null).concat(Array.from({length:dim},(_,i)=>i+1));
+    const tByDay=d=>S.tasks.filter(x=>{if(!x.dueDate)return false;const td=new Date(x.dueDate);return td.getFullYear()===cy&&td.getMonth()===cm&&td.getDate()===d;});
+    const td=new Date();
+    const sdt=S.calSelDay?tByDay(S.calSelDay):[];
+
+    content=`
+    <div class="header ${isDark?'':'light'}">
+      <div class="blob" style="width:160px;height:160px;background:${c.green};opacity:.15;top:-50px;right:-30px"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;position:relative">
+        <button id="calPrev" style="background:rgba(255,255,255,.12);border:none;border-radius:12px;padding:8px;display:flex">${ic('chevL')}</button>
+        <div style="text-align:center">
+          <div style="font-size:22px;font-weight:800;color:#fff">${t.months[cm]}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.5)">${cy}</div>
+        </div>
+        <button id="calNext" style="background:rgba(255,255,255,.12);border:none;border-radius:12px;padding:8px;display:flex">${ic('chevR')}</button>
+      </div>
+    </div>
+    <div style="margin:16px 18px 0;background:${c.card};border-radius:18px;padding:16px;border:1px solid ${c.border}">
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:10px">
+        ${t.weekdays.map(w=>`<div style="text-align:center;font-size:11px;font-weight:700;color:${c.sub}">${w}</div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">
+        ${cells.map((day,i)=>{
+          if(!day)return`<div key="${i}"></div>`;
+          const dt=tByDay(day);
+          const isNow=td.getDate()===day&&td.getMonth()===cm&&td.getFullYear()===cy;
+          const isSel=S.calSelDay===day;
+          return`<div data-day="${day}" style="text-align:center;padding:7px 2px;border-radius:12px;cursor:pointer;background:${isSel?c.gold:isNow?c.blue+'22':'transparent'};border:1.5px solid ${isSel?c.gold:isNow?c.blue+'66':'transparent'};color:${isSel?'#000':isNow?c.blue:c.text}">
+            <div style="font-size:14px;font-weight:${isSel||isNow?800:500}">${day}</div>
+            ${dt.length?`<div style="display:flex;justify-content:center;gap:2px;margin-top:3px">${dt.slice(0,3).map(()=>`<div style="width:5px;height:5px;border-radius:50%;background:${isSel?'#000':c.gold}"></div>`).join('')}</div>`:''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+    ${S.calSelDay?`<div style="padding:0 18px;margin-top:18px">
+      <div class="sec-title" style="color:${c.sub}">${t.dayTasks(S.calSelDay,cm+1,sdt.length)}</div>
+      ${sdt.length===0?`<div style="background:${c.card};border-radius:16px;padding:24px;text-align:center;color:${c.sub};border:1px solid ${c.border}">${t.notToday}</div>`:sdt.map(taskRowHTML).join('')}
+    </div>`:''}`;
+  }
+
+  else if(S.screen==='notes'){
+    content=`
+    <div class="header ${isDark?'':'light'}">
+      <div class="blob" style="width:160px;height:160px;background:${c.gold};opacity:.15;top:-50px;right:-30px"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;position:relative">
+        <div>
+          <div style="font-size:24px;font-weight:800;color:#fff">${t.nav[3]}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:2px">${S.notes.length} ${t.notesLabel}</div>
+        </div>
+        <button id="btnSett" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:8px;display:flex">${ic('gear')}</button>
+      </div>
+    </div>
+    <div style="padding:0 18px;margin-top:18px">
+      ${S.notes.length===0?`<div style="text-align:center;padding:60px 0;color:${c.sub}"><div style="font-size:48px;margin-bottom:12px">📝</div><div style="font-weight:700">${t.noNotes}</div></div>`:S.notes.map(n=>`
+        <div class="note-card" data-nid="${n.id}" style="background:${n.color||c.card}">
+          <div style="font-weight:800;font-size:15px;margin-bottom:6px">${esc(n.title)}</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.65);line-height:1.6;white-space:pre-wrap;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical">${esc(n.body)}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:8px">${t.updatedAt} ${fmtDate(n.updatedAt)}</div>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  // ── nav ──
+  const navHTML=`
+  <div class="nav ${isDark?'':'light'}">
+    ${NAV_ITEMS.map((item,i)=>{
+      const active=S.screen===item.key;
+      return`<div class="nav-item" data-nav="${item.key}">
+        ${active?`<div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);width:36px;height:3px;background:linear-gradient(90deg,${c.gold},${c.warn});border-radius:0 0 4px 4px"></div>`:''}
+        <div class="nav-icon" style="background:${active?`linear-gradient(135deg,${c.gold}22,${c.warn}22)`:'transparent'};border:1px solid ${active?c.gold+'33':'transparent'}">
+          <span style="color:${active?c.gold:c.sub};display:flex">${ic(active?item.icF:item.ic)}</span>
+        </div>
+        <span class="nav-label" style="color:${active?c.gold:c.sub}">${t.nav[i]}</span>
+      </div>`;
+    }).join('')}
+  </div>`;
+
+  // ── fab ──
+  const fabHTML=`<button class="fab" id="fab" style="background:linear-gradient(135deg,${c.gold},${c.warn})">${ic('plus')}</button>`;
+
+  // ── status bar ──
+  const now=new Date();
+  const statusHTML=`<div style="height:50px;background:${c.bg};display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:700;color:${c.sub}">
+    <span style="font-weight:800">${pad(now.getHours())}:${pad(now.getMinutes())}</span>
+    <span style="color:${c.gold};font-weight:800;letter-spacing:2px;font-size:10px">DAILY</span>
+    <span style="font-size:11px">${S.theme==='dark'?'🌙':'☀️'} ${S.lang.toUpperCase()}</span>
+  </div>`;
+
+  // ── modal ──
+  let modalHTML='';
+  if(S.modal || S.showSett){
+    const bg=isDark?'#161B25':'#fff';
+    const bdr=isDark?'#252D3F':'#DDE3F0';
+    let body='';
+
+    if(S.modal==='taskForm'){
+      const tf=S.taskForm, isEdit=!!tf.id;
+      body=`
+        <div style="font-weight:800;font-size:20px;margin-bottom:18px;color:${c.text}">${isEdit?t.editTask:t.addTask}</div>
+        <label class="label">${t.taskNameLbl}</label>
+        <input class="input ${isDark?'':'light'}" id="tf_title" type="text" placeholder="${esc(t.taskNamePh)}" value="${esc(tf.title)}" style="margin-bottom:14px"/>
+        <label class="label">${t.descLbl}</label>
+        <textarea class="input ${isDark?'':'light'}" id="tf_desc" rows="3" placeholder="${esc(t.descPh)}" style="margin-bottom:14px;line-height:1.6">${esc(tf.desc)}</textarea>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+          <div>
+            <label class="label">${t.priorityLbl}</label>
+            <select class="input ${isDark?'':'light'}" id="tf_prio">
+              ${VI_PRIOS.map((p,i)=>`<option value="${p}" ${tf.priority===p?'selected':''}>${esc(t.prios[i])}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="label">${t.tagLbl}</label>
+            <select class="input ${isDark?'':'light'}" id="tf_tag">
+              ${VI_TAGS.map((tg,i)=>`<option value="${tg}" ${tf.tag===tg?'selected':''}>${esc(t.tags[i])}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <label class="label">${t.deadlineLbl}</label>
+        <input class="input ${isDark?'':'light'}" id="tf_due" type="datetime-local" value="${esc(tf.dueDate)}" style="margin-bottom:20px"/>
+        <button class="btn btn-primary" id="btnSaveTask">${isEdit?t.saveBtn:t.createBtn}</button>
+        ${isEdit?`<button class="btn btn-danger" id="btnDeleteTask">${t.deleteTask}</button>`:''}
+        <button class="btn btn-ghost" id="btnCancelModal">${t.cancelBtn}</button>`;
+    }
+    else if(S.modal==='taskDetail'){
+      const task=S.selTask;
+      const ov=isPast(task.dueDate)&&!isToday(task.dueDate)&&!task.done;
+      const pi=VI_PRIOS.indexOf(task.priority); const ppi=pi>=0?pi:1;
+      const pc=PRIO_COLORS[ppi];
+      body=`
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+          <div style="flex:1">
+            <div style="font-weight:800;font-size:20px;line-height:1.3;color:${task.done?c.sub:c.text};text-decoration:${task.done?'line-through':'none'}">${esc(task.title)}</div>
+            <div style="margin-top:8px">${pill(pc,t.prioIcons[ppi]+' '+(t.prios[ppi]||task.priority))}</div>
+          </div>
+          <button id="btnPin" style="background:transparent;border:1.5px solid ${task.pinned?c.gold:bdr};border-radius:10px;padding:6px 12px;color:${task.pinned?c.gold:c.sub};font-family:inherit;font-size:12px;font-weight:700">${task.pinned?t.pinnedBtn:t.pinBtn}</button>
+        </div>
+        ${task.desc?`<div class="card ${isDark?'':'light'}" style="background:${c.card2};margin-bottom:14px"><div style="font-size:14px;line-height:1.6;color:${c.sub};white-space:pre-wrap">${esc(task.desc)}</div></div>`:''}
+        <div class="card ${isDark?'':'light'}" style="background:${c.card2};margin-bottom:18px">
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid ${bdr};font-size:14px">
+            <span style="color:${c.sub};font-weight:600">${t.deadlineInfo}</span>
+            <span style="font-weight:700;color:${ov?c.red:c.text};text-align:right">${task.dueDate?(ov?t.overdueTxt+' — ':'')+fmtFull(task.dueDate):'—'}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px">
+            <span style="color:${c.sub};font-weight:600">${t.createdInfo}</span>
+            <span style="font-weight:700">${fmtFull(task.createdAt)}</span>
+          </div>
+        </div>
+        <button class="btn ${task.done?'btn-ghost':'btn-primary'}" id="btnToggleTaskDone">${task.done?t.unmarkDone:t.markDone}</button>
+        <button class="btn btn-ghost" id="btnEditTaskFromDetail">${t.editBtn}</button>
+        <button class="btn btn-danger" id="btnDeleteTaskDetail">🗑 ${t.cancelBtn==='Huỷ'?'Xoá':'Delete'}</button>`;
+    }
+    else if(S.modal==='noteForm'){
+      const nf=S.noteForm, isNew=!nf.id;
+      body=`
+        <div style="font-weight:800;font-size:20px;margin-bottom:18px">${isNew?t.newNote:t.editNote}</div>
+        <label class="label" style="color:rgba(255,255,255,.5)">${t.noteTitleLbl}</label>
+        <input id="nf_title" type="text" placeholder="${esc(t.noteTitlePh)}" value="${esc(nf.title)}" style="width:100%;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.15);border-radius:12px;padding:12px 14px;color:#fff;outline:none;margin-bottom:14px"/>
+        <label class="label" style="color:rgba(255,255,255,.5)">${t.noteBodyLbl}</label>
+        <textarea id="nf_body" rows="8" placeholder="${esc(t.noteBodyPh)}" style="width:100%;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.15);border-radius:12px;padding:12px 14px;color:#fff;outline:none;margin-bottom:14px;line-height:1.6;font-size:14px;font-family:inherit">${esc(nf.body)}</textarea>
+        <label class="label" style="color:rgba(255,255,255,.5)">${t.noteColorLbl}</label>
+        <div style="display:flex;gap:10px;margin-bottom:20px">
+          ${NOTE_COLORS.map(nc=>`<div data-nc="${nc}" style="width:32px;height:32px;border-radius:10px;background:${nc};cursor:pointer;border:3px solid ${nf.color===nc?c.gold:'transparent'}"></div>`).join('')}
+        </div>
+        <button class="btn btn-primary" id="btnSaveNote">${isNew?t.createNote:t.saveNote}</button>
+        ${!isNew?`<button class="btn btn-danger" id="btnDeleteNote">${t.deleteNote}</button>`:''}
+        <button class="btn btn-ghost" id="btnCancelModal">${t.cancelBtn}</button>`;
+    }
+    else if(S.showSett){
+      body=`
+        <div style="font-weight:800;font-size:20px;margin-bottom:20px;color:${c.text}">${t.settings}</div>
+        <label class="label">${t.themeLabel}</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+          ${['dark','light'].map(th=>`<button data-settheme="${th}" style="background:${S.theme===th?c.gold:'transparent'};color:${S.theme===th?'#000':c.sub};border:1.5px solid ${S.theme===th?c.gold:bdr};border-radius:14px;padding:12px;font-size:14px;font-weight:700;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
+            ${th==='dark'?ic('moon'):ic('sun')} ${th==='dark'?t.darkLabel:t.lightLabel}
+          </button>`).join('')}
+        </div>
+        <label class="label">${t.langLabel}</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:24px">
+          ${[['vi','🇻🇳 Việt'],['en','🇬🇧 EN'],['ko','🇰🇷 한국어']].map(([code,label])=>`<button data-setlang="${code}" style="background:${S.lang===code?c.blue+'22':'transparent'};color:${S.lang===code?c.blue:c.sub};border:1.5px solid ${S.lang===code?c.blue:bdr};border-radius:14px;padding:11px 6px;font-size:12px;font-weight:700;font-family:inherit">${label}</button>`).join('')}
+        </div>
+        <div class="card ${isDark?'':'light'}" style="background:${c.card2}">
+          <div style="font-size:13px;font-weight:700;color:${c.text};margin-bottom:12px">${t.backupTitle}</div>
+          <div style="font-size:12px;color:${c.sub};margin-bottom:14px">🔒 ${t.storageInfo}</div>
+          <button class="btn btn-ghost" id="btnExport" style="margin-bottom:8px">${t.exportBtn}</button>
+          <button class="btn btn-ghost" id="btnImportTrigger" style="margin-bottom:0">${t.importBtn}</button>
+          <input type="file" id="importFile" accept=".json" style="display:none"/>
+        </div>
+        <div style="background:${c.blue}22;border:1px solid ${c.blue}44;border-radius:14px;padding:12px 14px;margin-top:10px">
+          <div style="font-size:12px;color:${c.blue};font-weight:600">${t.addToHome}</div>
+        </div>
+        <button class="btn btn-ghost" id="btnCancelModal" style="margin-top:10px">${t.cancelBtn}</button>`;
+    }
+
+    const sheetBg = S.modal==='noteForm' ? (S.noteForm.color||bg) : bg;
+    modalHTML=`<div class="overlay" id="overlay">
+      <div class="sheet ${isDark&&S.modal!=='noteForm'?'':'light'}" style="background:${sheetBg};border-color:${bdr}">
+        <div class="handle" style="background:${S.modal==='noteForm'?'rgba(255,255,255,.2)':bdr}"></div>
+        <div class="sheet-body">${body}</div>
+      </div>
+    </div>`;
+  }
+
+  // ── assemble ──
+  document.getElementById('app').innerHTML = statusHTML + `<div class="screen">${content}</div>` + navHTML + fabHTML + modalHTML;
+
+  // ── bind events ──
+  bindEvents();
+}
+
+function bindEvents(){
+  const c=C(), t=T();
+
+  // nav
+  document.querySelectorAll('[data-nav]').forEach(el=>{
+    el.addEventListener('click',()=>{ S.screen=el.dataset.nav; S.calSelDay=null; render(); });
+  });
+
+  // fab
+  const fab=document.getElementById('fab');
+  if(fab) fab.addEventListener('click',()=>{
+    if(S.screen==='notes'){ S.noteForm={id:null,title:'',body:'',color:'#1E3A5F'}; S.modal='noteForm'; }
+    else { S.taskForm={id:null,title:'',desc:'',priority:'Quan trọng',tag:'Cá nhân',dueDate:''}; S.modal='taskForm'; }
+    render();
+  });
+
+  // settings btn
+  document.querySelectorAll('#btnSett').forEach(el=>el.addEventListener('click',()=>{ S.showSett=true; render(); }));
+
+  // go notes
+  const gn=document.getElementById('goNotes');
+  if(gn) gn.addEventListener('click',()=>{ S.screen='notes'; render(); });
+
+  // task rows
+  document.querySelectorAll('.task-row').forEach(el=>{
+    el.addEventListener('click',e=>{
+      if(e.target.closest('[data-check]'))return;
+      const id=el.dataset.id;
+      S.selTask=S.tasks.find(x=>x.id===id);
+      if(S.selTask){ S.modal='taskDetail'; render(); }
+    });
+  });
+  document.querySelectorAll('[data-check]').forEach(el=>{
+    el.addEventListener('click',e=>{ e.stopPropagation();
+      const id=el.dataset.check;
+      const task=S.tasks.find(x=>x.id===id);
+      S.tasks=S.tasks.map(x=>x.id===id?{...x,done:!x.done}:x);
+      save(); toast(task&&task.done?'↩️':'✅'); render();
+    });
+  });
+
+  // note cards
+  document.querySelectorAll('[data-nid]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const n=S.notes.find(x=>x.id===el.dataset.nid);
+      if(n){ S.noteForm={...n}; S.modal='noteForm'; render(); }
+    });
+  });
+
+  // tag filter
+  document.querySelectorAll('[data-filter]').forEach(el=>{
+    el.addEventListener('click',()=>{ S.filterTag=el.dataset.filter==='__all__'?null:el.dataset.filter; render(); });
+  });
+
+  // toggle done
+  const td=document.getElementById('btnToggleDone');
+  if(td) td.addEventListener('click',()=>{ S.showDone=!S.showDone; render(); });
+
+  // calendar
+  const cp=document.getElementById('calPrev');
+  if(cp) cp.addEventListener('click',()=>{ S.calDate=new Date(S.calDate.getFullYear(),S.calDate.getMonth()-1,1); S.calSelDay=null; render(); });
+  const cn=document.getElementById('calNext');
+  if(cn) cn.addEventListener('click',()=>{ S.calDate=new Date(S.calDate.getFullYear(),S.calDate.getMonth()+1,1); S.calSelDay=null; render(); });
+  document.querySelectorAll('[data-day]').forEach(el=>{
+    el.addEventListener('click',()=>{ const d=parseInt(el.dataset.day); S.calSelDay=S.calSelDay===d?null:d; render(); });
+  });
+
+  // overlay close
+  const ov=document.getElementById('overlay');
+  if(ov) ov.addEventListener('click',e=>{ if(e.target===ov){ S.modal=null; S.showSett=false; render(); } });
+
+  // cancel modal
+  document.querySelectorAll('#btnCancelModal').forEach(el=>el.addEventListener('click',()=>{ S.modal=null; S.showSett=false; render(); }));
+
+  // task form save
+  const bst=document.getElementById('btnSaveTask');
+  if(bst) bst.addEventListener('click',()=>{
+    const title=document.getElementById('tf_title').value.trim();
+    if(!title)return;
+    const tf=S.taskForm;
+    const updated={...tf,title,desc:document.getElementById('tf_desc').value,priority:document.getElementById('tf_prio').value,tag:document.getElementById('tf_tag').value,dueDate:document.getElementById('tf_due').value};
+    if(tf.id){ S.tasks=S.tasks.map(x=>x.id===tf.id?updated:x); }
+    else { S.tasks=[{...updated,id:uid(),done:false,createdAt:new Date().toISOString()},...S.tasks]; }
+    save(); scheduleReminders(); S.modal=null; toast('✓'); render();
+  });
+
+  // task form delete
+  const bdt=document.getElementById('btnDeleteTask');
+  if(bdt) bdt.addEventListener('click',()=>{ S.tasks=S.tasks.filter(x=>x.id!==S.taskForm.id); save(); S.modal=null; toast('🗑','err'); render(); });
+
+  // task detail buttons
+  const bttd=document.getElementById('btnToggleTaskDone');
+  if(bttd) bttd.addEventListener('click',()=>{
+    S.tasks=S.tasks.map(x=>x.id===S.selTask.id?{...x,done:!x.done}:x);
+    S.selTask={...S.selTask,done:!S.selTask.done};
+    save(); toast(S.selTask.done?'✅':'↩️'); render();
+  });
+  const betd=document.getElementById('btnEditTaskFromDetail');
+  if(betd) betd.addEventListener('click',()=>{ S.taskForm={...S.selTask}; S.modal='taskForm'; render(); });
+  const bdetd=document.getElementById('btnDeleteTaskDetail');
+  if(bdetd) bdetd.addEventListener('click',()=>{ S.tasks=S.tasks.filter(x=>x.id!==S.selTask.id); save(); S.modal=null; toast('🗑','err'); render(); });
+  const bpin=document.getElementById('btnPin');
+  if(bpin) bpin.addEventListener('click',()=>{
+    S.tasks=S.tasks.map(x=>x.id===S.selTask.id?{...x,pinned:!x.pinned}:x);
+    S.selTask={...S.selTask,pinned:!S.selTask.pinned};
+    save(); render();
+  });
+
+  // note form save
+  const bsn=document.getElementById('btnSaveNote');
+  if(bsn) bsn.addEventListener('click',()=>{
+    const title=document.getElementById('nf_title').value.trim();
+    if(!title)return;
+    const nf=S.noteForm, now=new Date().toISOString();
+    const updated={...nf,title,body:document.getElementById('nf_body').value};
+    if(nf.id){ S.notes=S.notes.map(x=>x.id===nf.id?{...updated,updatedAt:now}:x); }
+    else { S.notes=[{...updated,id:uid(),createdAt:now,updatedAt:now},...S.notes]; }
+    save(); S.modal=null; toast('✓'); render();
+  });
+
+  // note form delete
+  const bdn=document.getElementById('btnDeleteNote');
+  if(bdn) bdn.addEventListener('click',()=>{ S.notes=S.notes.filter(x=>x.id!==S.noteForm.id); save(); S.modal=null; toast('🗑','err'); render(); });
+
+  // note color picker
+  document.querySelectorAll('[data-nc]').forEach(el=>{
+    el.addEventListener('click',()=>{ S.noteForm={...S.noteForm,color:el.dataset.nc}; render(); });
+  });
+
+  // settings: theme
+  document.querySelectorAll('[data-settheme]').forEach(el=>{
+    el.addEventListener('click',()=>{ S.theme=el.dataset.settheme; LS.set('dm_theme',S.theme); render(); });
+  });
+
+  // settings: lang
+  document.querySelectorAll('[data-setlang]').forEach(el=>{
+    el.addEventListener('click',()=>{ S.lang=el.dataset.setlang; LS.set('dm_lang',S.lang); render(); });
+  });
+
+  // export
+  const bexp=document.getElementById('btnExport');
+  if(bexp) bexp.addEventListener('click',()=>{
+    const data={tasks:S.tasks,notes:S.notes,exportedAt:new Date().toISOString(),version:'1.0'};
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download='DailyBackup_'+fmtDate(new Date().toISOString()).replace(/\//g,'-')+'.json';
+    a.click(); URL.revokeObjectURL(url);
+    toast(T().exportOk);
+  });
+
+  // import
+  const bimp=document.getElementById('btnImportTrigger');
+  if(bimp) bimp.addEventListener('click',()=>document.getElementById('importFile').click());
+  const impFile=document.getElementById('importFile');
+  if(impFile) impFile.addEventListener('change',e=>{
+    const file=e.target.files[0]; if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{ try{
+      const d=JSON.parse(ev.target.result);
+      if(d.tasks&&d.notes){ S.tasks=d.tasks; S.notes=d.notes; save(); toast(T().importOk); render(); }
+      else toast(T().importErr,'err');
+    }catch(err){ toast(T().importErr,'err'); } };
+    reader.readAsText(file); e.target.value='';
+  });
+}
+
+// ═══════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════
+scheduleReminders();
+render();
+
+// Welcome banner (disappears after 3s)
+setTimeout(()=>{
+  const w=document.createElement('div');
+  w.className='welcome';
+  w.innerHTML=`<div style="font-size:28px">👋</div>
+    <div style="font-size:22px;font-weight:800;color:#fff;margin-top:6px">Xin chào, ${USER}!</div>
+    <div style="font-size:14px;color:rgba(255,255,255,.7);margin-top:4px">Daily Management · Chào mừng trở lại</div>`;
+  document.body.appendChild(w);
+  setTimeout(()=>{ w.style.transition='opacity .5s'; w.style.opacity='0'; setTimeout(()=>w.remove(),500); }, 2500);
+},100);
+
+// Clock update every minute
+setInterval(render, 60000);
+</script>
+</body>
+</html>
